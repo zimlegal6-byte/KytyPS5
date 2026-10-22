@@ -213,6 +213,8 @@ std::optional<PkgInspection> InspectPkgFile(const std::filesystem::path& path) {
 		result.kind = PkgHeaderKind::Ps4Cnt;
 	} else if (magic[0] == 0x7F && magic[1] == 'F' && magic[2] == 'I' && magic[3] == 'H') {
 		result.kind = PkgHeaderKind::Ps5Fih;
+	} else if (magic[0] == 0x7F && magic[1] == 'P' && magic[2] == 'K' && magic[3] == 'G') {
+		result.kind = PkgHeaderKind::Ps5Pkg;
 	}
 	return result;
 }
