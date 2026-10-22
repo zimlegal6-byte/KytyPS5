@@ -28,6 +28,10 @@ struct PkgInspection {
 	uint32_t entry_count = 0;
 	uint64_t entry_table_offset = 0;
 	uint64_t entry_table_size = 0;
+	std::string content_id;
+	uint32_t drm_type = 0;
+	bool pfs_entry_found = false;
+	uint32_t encrypted_entry_count = 0;
 	std::wstring detail;
 };
 // Reads package markers and performs bounded header/table checks when the format matches a known layout. This does not validate signatures, decrypt, extract, install, or run a package.
