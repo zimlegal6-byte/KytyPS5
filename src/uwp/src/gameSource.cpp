@@ -181,8 +181,24 @@ bool IsPs5PkgHeaderStructurallyValid(const std::filesystem::path& path) {
 		return false;
 	}
 	const uint64_t pfsEnd = pfsOffset + pfsSize;
-	return cntOffset >= pfsEnd && cntOffset <= fileSize && cntSize >= 4 && cntSize <= fileSize - cntOffset &&
-	       header[5] <= 0x80;
+	if (cntOffset < pfsEnd || cntOffset > fileSize || cntSize < 4 || cntSize > fileSize - cntOffset) {
+		return false;
+	}
+
+	// Confirm the embedded metadata segment really starts with CNT, not just a plausible offset.
+	HANDLE fileForCnt = CreateFile2FromAppW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr);
+	if (fileForCnt == INVALID_HANDLE_VALUE) {
+		return false;
+	}
+	LARGE_INTEGER position {};
+	position.QuadPart = static_cast<LONGLONG>(cntOffset);
+	uint8_t cntMagic[4] {};
+	DWORD cntRead = 0;
+	const bool seekOk = SetFilePointerEx(fileForCnt, position, nullptr, FILE_BEGIN) != 0;
+	const bool cntOk = seekOk && ReadFile(fileForCnt, cntMagic, sizeof(cntMagic), &cntRead, nullptr) != 0 &&
+	                   cntRead == sizeof(cntMagic);
+	CloseHandle(fileForCnt);
+	return cntOk && cntMagic[0] == 0x7f && cntMagic[1] == 'C' && cntMagic[2] == 'N' && cntMagic[3] == 'T';
 }
 
 bool GameFileExists(const std::filesystem::path& path) {
