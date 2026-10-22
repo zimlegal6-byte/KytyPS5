@@ -699,6 +699,23 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 					    report += L"  Entradas: " + std::to_wstring(info->entry_count) +
 					              L"; deslocamento da tabela " + std::to_wstring(info->entry_table_offset) +
 					              L"; tamanho " + std::to_wstring(info->entry_table_size) + L" bytes.\n";
+					    const size_t shown_entries = (std::min)(info->entries.size(), size_t {16});
+					    for (size_t entry_index = 0; entry_index < shown_entries; ++entry_index) {
+						    const auto& entry = info->entries[entry_index];
+						    report += L"    [" + std::to_wstring(entry_index) + L"] ID=0x" +
+						              winrt::to_hstring(std::format(L"{:08X}", entry.id)).c_str() +
+						              L" tipo=0x" + winrt::to_hstring(std::format(L"{:08X}", entry.type_flags)).c_str() +
+						              L" tamanho=" + std::to_wstring(entry.size) + L" bytes";
+						    if (!entry.name.empty()) {
+							    report += L" nome=" + winrt::to_hstring(entry.name).c_str();
+						    }
+						    if ((entry.type_flags & 0x80000000u) != 0) report += L" [criptografada]";
+						    if ((entry.type_flags & 0xFFFFu) == 0x0001u) report += L" [PFS]";
+					    report += L"\n";
+				    }
+					    if (info->entries.size() > shown_entries) {
+						    report += L"    ... outras " + std::to_wstring(info->entries.size() - shown_entries) + L" entradas omitidas da tela.\n";
+					    }
 				    }
 					    } else if (info->kind == PkgHeaderKind::Ps5Pkg) {
 					    ++ps5_pkg;
