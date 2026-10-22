@@ -131,7 +131,7 @@ bool HasPackageMagic(const std::filesystem::path& path, const uint8_t (&expected
 	DWORD read = 0;
 	const bool ok = ReadFile(file, magic, sizeof(magic), &read, nullptr) != 0 && read == sizeof(magic);
 	CloseHandle(file);
-	return ok && std::equal(std::begin(magic), std::end(magic), std::begin(expected));
+	return ok && magic[0] == expected[0] && magic[1] == expected[1] && magic[2] == expected[2] && magic[3] == expected[3];
 }
 } // namespace
 
