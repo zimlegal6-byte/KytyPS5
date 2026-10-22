@@ -203,8 +203,8 @@ std::optional<PkgInspection> InspectPkgFile(const std::filesystem::path& path) {
 	DWORD bytes_read = 0;
 	const bool got_magic = got_size && ReadFile(file, magic, sizeof(magic), &bytes_read, nullptr) != 0 &&
 	                       bytes_read == sizeof(magic);
-	CloseHandle(file);
 	if (!got_magic) {
+		CloseHandle(file);
 		return std::nullopt;
 	}
 	PkgInspection result;
@@ -253,6 +253,7 @@ std::optional<PkgInspection> InspectPkgFile(const std::filesystem::path& path) {
 		result.kind = PkgHeaderKind::Ps5Pkg;
 		result.detail = L"PKG marker only; internal structure not validated.";
 	}
+	CloseHandle(file);
 	return result;
 }
 
