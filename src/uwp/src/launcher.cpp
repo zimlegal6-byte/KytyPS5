@@ -629,7 +629,19 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 							            }
 							            try {
 								            auto copied = copy_op.GetResults();
-								            status_text.Text(L"Arquivo copiado para Games: " + copied.Name() + L". Isso não instala nem executa o arquivo; pressione Y para atualizar a biblioteca.");
+								            copied.GetBasicPropertiesAsync().Completed([page, copied](auto const& props_op, winrt::Windows::Foundation::AsyncStatus props_status) {
+														auto final_status = page.FindName(L"ImportGameFileStatus").as<xaml::Controls::TextBlock>();
+														if (props_status != winrt::Windows::Foundation::AsyncStatus::Completed) {
+															final_status.Text(L"Arquivo copiado, mas não foi possível verificar o tamanho.");
+															return;
+														}
+														try {
+															auto props = props_op.GetResults();
+															final_status.Text(L"Arquivo copiado para Games: " + copied.Name() + L" (" + winrt::to_hstring(props.Size()) + L" bytes). Tamanho informado; conteúdo e compatibilidade não validados. Pressione Y para atualizar a biblioteca.");
+														} catch (const winrt::hresult_error&) {
+															final_status.Text(L"Arquivo copiado, mas falhou a leitura das propriedades.");
+														}
+													});
 							            } catch (const winrt::hresult_error&) {
 								            status_text.Text(L"Falha ao finalizar a importação.");
 							            }
