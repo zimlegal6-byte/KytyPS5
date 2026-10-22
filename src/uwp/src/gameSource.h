@@ -19,6 +19,8 @@ namespace Kyty::Uwp {
 [[nodiscard]] bool HasPs4PkgSignature(const std::filesystem::path& path);
 // Checks the PS5 finalized-package signature (7F FIH) using a bounded read.
 [[nodiscard]] bool HasPs5PkgSignature(const std::filesystem::path& path);
+// Validates the FIH header's PFS/CNT ranges against the physical file size; does not decrypt or mount it.
+[[nodiscard]] bool IsPs5PkgHeaderStructurallyValid(const std::filesystem::path& path);
 
 // Whether the file exists.
 [[nodiscard]] bool GameFileExists(const std::filesystem::path& path);
