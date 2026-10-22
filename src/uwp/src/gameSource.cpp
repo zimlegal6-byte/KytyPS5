@@ -192,4 +192,46 @@ std::vector<std::filesystem::path> ExfatImagesIn(const std::filesystem::path& fo
 	return result;
 }
 
+std::optional<PkgInspection> InspectPkgFile(const std::filesystem::path& path) {
+	HANDLE file = CreateFile2FromAppW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr);
+	if (file == INVALID_HANDLE_VALUE) {
+		return std::nullopt;
+	}
+	LARGE_INTEGER size {};
+	const bool got_size = GetFileSizeEx(file, &size) != 0 && size.QuadPart >= 4;
+	uint8_t magic[4] {};
+	DWORD bytes_read = 0;
+	const bool got_magic = got_size && ReadFile(file, magic, sizeof(magic), &bytes_read, nullptr) != 0 &&
+	                       bytes_read == sizeof(magic);
+	CloseHandle(file);
+	if (!got_magic) {
+		return std::nullopt;
+	}
+	PkgInspection result;
+	result.file_size = static_cast<uint64_t>(size.QuadPart);
+	if (magic[0] == 0x7F && magic[1] == 'C' && magic[2] == 'N' && magic[3] == 'T') {
+		result.kind = PkgHeaderKind::Ps4Cnt;
+	} else if (magic[0] == 0x7F && magic[1] == 'F' && magic[2] == 'I' && magic[3] == 'H') {
+		result.kind = PkgHeaderKind::Ps5Fih;
+	}
+	return result;
+}
+
+std::vector<std::filesystem::path> PackagesIn(const std::filesystem::path& folder) {
+	std::vector<std::filesystem::path> result;
+	WIN32_FIND_DATAW data {};
+	HANDLE find = FindFirstFileExFromAppW((folder / L"*.pkg").c_str(), FindExInfoBasic, &data, FindExSearchNameMatch, nullptr, 0);
+	if (find == INVALID_HANDLE_VALUE) {
+		return result;
+	}
+	do {
+		if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+			result.push_back(folder / data.cFileName);
+		}
+	} while (FindNextFileW(find, &data));
+	FindClose(find);
+	std::sort(result.begin(), result.end());
+	return result;
+}
+
 } // namespace Kyty::Uwp
