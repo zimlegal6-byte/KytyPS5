@@ -12,6 +12,8 @@
 #include <winrt/Microsoft.UI.Xaml.Controls.h>
 #include <winrt/Windows.Foundation.Collections.h>
 #include <winrt/Windows.System.h>
+#include <winrt/Windows.Storage.h>
+#include <winrt/Windows.Storage.Pickers.h>
 #include <winrt/Windows.UI.h>
 #include <winrt/Windows.UI.Core.h>
 #include <winrt/Windows.UI.Xaml.Automation.h>
@@ -219,6 +221,8 @@ constexpr wchar_t LauncherMarkup[] = LR"xaml(
           <TextBlock Text="Overdrive.exfat é uma imagem exFAT para ShadowMount+ em um PS5 desbloqueado. O KytyPS5-Xbox não pode instalar nem executar essa imagem diretamente." TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" />
           <Button x:Name="HomebrewTopicButton" Content="Projetos PS5 homebrew no GitHub" HorizontalAlignment="Stretch" Padding="12" />
           <Button x:Name="ItchHomebrewButton" Content="Jogos independentes e homebrew no itch.io" HorizontalAlignment="Stretch" Padding="12" />
+          <Button x:Name="ImportGameFileButton" Content="Importar arquivo .pkg/.exfat autorizado para Games" HorizontalAlignment="Stretch" Padding="12" />
+          <TextBlock x:Name="ImportGameFileStatus" Text="Escolha um arquivo que você possui ou tem autorização para usar. A importação não garante compatibilidade." TextWrapping="Wrap" FontSize="12" />
           <Button x:Name="ScanPkgButton" Content="Examinar cabeçalhos de arquivos PKG" HorizontalAlignment="Stretch" Padding="12" />
           <TextBlock x:Name="PkgScanStatus" Text="PKG: nenhuma verificação realizada. Apenas a assinatura estrutural inicial será lida." TextWrapping="Wrap" FontSize="12" />
           <Button x:Name="ScanExfatButton" Content="Procurar imagens .exfat nas pastas de jogos" HorizontalAlignment="Stretch" Padding="12" />
@@ -582,6 +586,58 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 		        winrt::Windows::Foundation::Uri(L"https://itch.io/games/tag-homebrew"));
 	    });
 
+	find(L"ImportGameFileButton").as<xaml::Controls::Button>().Click(
+	    [page](auto const&, auto const&) {
+		    auto status = page.FindName(L"ImportGameFileStatus").as<xaml::Controls::TextBlock>();
+		    status.Text(L"Abrindo seletor de arquivos...");
+		    winrt::Windows::Storage::Pickers::FileOpenPicker picker;
+		    picker.ViewMode(winrt::Windows::Storage::Pickers::PickerViewMode::List);
+		    picker.SuggestedStartLocation(winrt::Windows::Storage::Pickers::PickerLocationId::Downloads);
+		    picker.FileTypeFilter().Append(L".pkg");
+		    picker.FileTypeFilter().Append(L".exfat");
+		    picker.FileTypeFilter().Append(L".zar");
+		    picker.PickSingleFileAsync().Completed([page](auto const& operation, winrt::Windows::Foundation::AsyncStatus async_status) {
+			    auto status_text = page.FindName(L"ImportGameFileStatus").as<xaml::Controls::TextBlock>();
+			    if (async_status != winrt::Windows::Foundation::AsyncStatus::Completed) {
+				    status_text.Text(L"Não foi possível abrir o seletor de arquivos.");
+				    return;
+			    }
+			    winrt::Windows::Storage::StorageFile file{nullptr};
+			    try { file = operation.GetResults(); }
+			    catch (const winrt::hresult_error&) {
+				    status_text.Text(L"Importação cancelada ou falha ao selecionar arquivo.");
+				    return;
+			    }
+			    if (!file) { status_text.Text(L"Importação cancelada."); return; }
+			    auto folder_path = LocalStateFolder() / L"Games";
+			    std::error_code ec;
+			    std::filesystem::create_directories(folder_path, ec);
+			    if (ec) { status_text.Text(L"Não foi possível criar LocalState/Games."); return; }
+			    winrt::Windows::Storage::StorageFolder::GetFolderFromPathAsync(folder_path.wstring()).Completed(
+			        [page, file](auto const& folder_op, winrt::Windows::Foundation::AsyncStatus folder_status) {
+				        auto status_text = page.FindName(L"ImportGameFileStatus").as<xaml::Controls::TextBlock>();
+				        if (folder_status != winrt::Windows::Foundation::AsyncStatus::Completed) {
+					        status_text.Text(L"Não foi possível acessar LocalState/Games."); return;
+				        }
+				        try {
+					        auto destination = folder_op.GetResults();
+					        file.CopyAsync(destination, file.Name(), winrt::Windows::Storage::NameCollisionOption::GenerateUniqueName).Completed(
+						            [page](auto const& copy_op, winrt::Windows::Foundation::AsyncStatus copy_status) {
+							            auto status_text = page.FindName(L"ImportGameFileStatus").as<xaml::Controls::TextBlock>();
+							            if (copy_status != winrt::Windows::Foundation::AsyncStatus::Completed) {
+								            status_text.Text(L"Falha ao copiar. Confira o acesso ao arquivo e o espaço livre."); return;
+							            }
+							            try {
+								            auto copied = copy_op.GetResults();
+								            status_text.Text(L"Arquivo copiado para Games: " + copied.Name() + L". Isso não instala nem executa o arquivo; pressione Y para atualizar a biblioteca.");
+							            } catch (const winrt::hresult_error&) {
+								            status_text.Text(L"Falha ao finalizar a importação.");
+							            }
+						            });
+			        } catch (const winrt::hresult_error&) { status_text.Text(L"Falha ao iniciar a cópia do arquivo."); }
+		        });
+	    });
+	    });
 	find(L"ScanPkgButton").as<xaml::Controls::Button>().Click(
 	    [page](auto const&, auto const&) {
 		    std::wstring report;
