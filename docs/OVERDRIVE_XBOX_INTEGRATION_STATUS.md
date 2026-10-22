@@ -23,7 +23,7 @@ The uploaded binary's raw bytes were not independently parsed in this tool sessi
 
 ## PKG support status
 
-The current base branch has no PS4/PS5 PKG import/install pipeline in the Xbox UWP launcher. It should not treat the filename extension as proof of format. A correct implementation requires separately validated parsers for PS4-style CNT packages and PS5 FIH envelopes, bounds/overflow checks, trusted test fixtures, and clear separation between recognition, extraction, installation, and execution. Do not infer that parsing or extracting a package makes it runnable.
+The launcher now has a diagnostic scanner that reads only the first four bytes and file size, and labels the magic as possible CNT/PS4, FIH/PS5, or unknown. This is deliberately not a complete parser: it does not validate cryptographic signatures, internal metadata, offsets, bounds, licenses, or integrity. The Xbox UWP app still has no PKG extraction, installation, or execution pipeline. A complete implementation requires separately validated parsers, bounds/overflow checks, trusted legal test fixtures, and clear separation between recognition, extraction, installation, and execution. Do not infer that parsing or extracting a package makes it runnable.
 
 No package decryption, signature bypass, DRM circumvention, or unauthorized commercial-game distribution is part of this branch.
 
