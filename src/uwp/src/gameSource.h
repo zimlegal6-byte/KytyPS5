@@ -40,6 +40,8 @@ struct Ps5PkgHeaderInfo {
 [[nodiscard]] std::vector<std::filesystem::path> ArchivesIn(const std::filesystem::path& folder);
 // The .pkg files directly in `folder`.
 [[nodiscard]] std::vector<std::filesystem::path> PackagesIn(const std::filesystem::path& folder);
+// The .exfat disk images directly in `folder`; finding one does not mean it can be mounted.
+[[nodiscard]] std::vector<std::filesystem::path> ExfatImagesIn(const std::filesystem::path& folder);
 
 } // namespace Kyty::Uwp
 
