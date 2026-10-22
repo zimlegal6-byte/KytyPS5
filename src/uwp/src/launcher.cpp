@@ -233,6 +233,9 @@ constexpr wchar_t LauncherMarkup[] = LR"xaml(
         <Button x:Name="ScanPkgButton" Content="Examinar arquivos PKG locais" HorizontalAlignment="Stretch" Padding="12" />
         <TextBlock x:Name="PkgScanStatus" Text="PKG: ainda não examinados. A leitura é experimental; este app não instala nem executa PKG."
                    TextWrapping="Wrap" FontSize="12" />
+        <Button x:Name="ScanExfatButton" Content="Examinar Overdrive / imagens EXFAT" HorizontalAlignment="Stretch" Padding="12" />
+        <TextBlock x:Name="ExfatScanStatus" Text="EXFAT: ainda não examinados. O KytyPS5 ainda não monta imagens .exfat nem instala apps PS5 a partir delas."
+                   TextWrapping="Wrap" FontSize="12" />
         <TextBlock Text="Próxima etapa: catálogo próprio de homebrew com metadados, licença, origem e download verificado."
                    TextWrapping="Wrap" Opacity="0.75" FontSize="12" />
         <Button x:Name="StoreCloseButton" Content="Voltar à biblioteca" HorizontalAlignment="Right" />
@@ -635,6 +638,32 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 		    report += L"Reconhecimento estrutural não valida assinatura, não descriptografa, não extrai e não executa o jogo.";
 		    auto status = page.FindName(L"PkgScanStatus").as<xaml::Controls::TextBlock>();
 		    status.Text(report);
+	    });
+	find(L"ScanExfatButton").as<xaml::Controls::Button>().Click(
+	    [page](auto const&, auto const&) {
+		    std::wstring report;
+		    size_t found = 0;
+		    std::function<void(const std::filesystem::path&, int)> scan_folder;
+		    scan_folder = [&](const std::filesystem::path& folder, int depth) {
+			    for (const auto& image : ExfatImagesIn(folder)) {
+				    ++found;
+				    report += L"Imagem EXFAT encontrada: " + image.wstring() + L"\\n";
+			    }
+			    if (depth > 0) {
+				    for (const auto& subfolder : Subfolders(folder)) {
+					    scan_folder(subfolder, depth - 1);
+				    }
+			    }
+		    };
+		    for (const auto& folder : GameFolders()) {
+			    scan_folder(folder, 2);
+		    }
+		    if (found == 0) {
+			    report = L"Nenhum arquivo .exfat encontrado nas pastas de jogos configuradas. Copie Overdrive.exfat para uma dessas pastas e examine novamente.\\n";
+		    }
+		    report += L"\\nTotal: " + std::to_wstring(found) + L" imagem(ns).\\n";
+		    report += L"Limitação: Overdrive.exfat é uma imagem para ShadowMount+ no PS5 desbloqueado. Este build UWP ainda não tem montador EXFAT nem o runtime/payload PS5 necessário para instalar ou executar esse app. Encontrar o arquivo não o instala.";
+		    page.FindName(L"ExfatScanStatus").as<xaml::Controls::TextBlock>().Text(report);
 	    });
 	find(L"TrophiesButton").as<xaml::Controls::Button>().Click(
 	    [launcher](auto const&, auto const&) { launcher->actions.open_trophies(); });
