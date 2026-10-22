@@ -54,7 +54,9 @@ void ScanFolder(const std::filesystem::path& folder, int depth, std::vector<Game
 	}
 	// PKG files are detected for diagnostics, but not added as runnable games until extraction/loading exists.
 	for (const auto& package: PackagesIn(folder)) {
-		const char* kind = HasPs5PkgSignature(package) ? "PS5 FIH" : (HasPs4PkgSignature(package) ? "CNT container (not confirmed PS5 installable PKG)" : "Unknown");
+		const char* kind = HasPs5PkgSignature(package)
+		                     ? (IsPs5PkgHeaderStructurallyValid(package) ? "PS5 FIH header OK" : "PS5 FIH header invalid")
+		                     : (HasPs4PkgSignature(package) ? "CNT container (not confirmed PS5 installable PKG)" : "Unknown");
 		Log("%s PKG: %ls (not runnable yet; package parsing/mounting is not implemented)\n", kind, package.c_str());
 	}
 	// .zar archives: a game dump the emulator reads in place
