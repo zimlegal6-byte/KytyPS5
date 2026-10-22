@@ -20,7 +20,7 @@ namespace Kyty::Uwp {
 [[nodiscard]] std::optional<std::vector<uint8_t>> ReadGameBinary(const std::filesystem::path& path);
 [[nodiscard]] std::optional<std::string>          ReadGameText(const std::filesystem::path& path);
 
-enum class PkgHeaderKind { Unknown, Ps4Cnt, Ps5Fih };
+enum class PkgHeaderKind { Unknown, Ps4Cnt, Ps5Fih, Ps5Pkg };
 struct PkgInspection {
 	PkgHeaderKind kind = PkgHeaderKind::Unknown;
 	uint64_t file_size = 0;
