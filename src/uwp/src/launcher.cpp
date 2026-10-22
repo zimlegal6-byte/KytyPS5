@@ -597,7 +597,13 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 				    ++found;
 				    if (const auto header = ReadPs5PkgHeader(package)) {
 					    ++ps5;
-					    report += L"PS5 FIH (estrutura reconhecida): " + package.filename().wstring() + L"\n";
+					    report += L"PS5 FIH (estrutura reconhecida): " + package.filename().wstring() +
+					              L"\n  Tamanho: " + std::to_wstring(header->file_size) +
+					              L" bytes\n  PFS: " + std::to_wstring(header->pfs_offset) + L" + " +
+					              std::to_wstring(header->pfs_size) + L"\n  CNT: " +
+					              std::to_wstring(header->cnt_offset) + L" + " +
+					              std::to_wstring(header->cnt_size) + L"\n  Marcador: " +
+					              (header->retail_signed_byte ? L"retail" : L"debug/nao-retail") + L"\n";
 				    } else if (HasPs4PkgSignature(package)) {
 					    ++other;
 					    report += L"CNT / possível PKG de outra variante: " + package.filename().wstring() + L"\n";
