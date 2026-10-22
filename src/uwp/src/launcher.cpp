@@ -592,7 +592,8 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 	    [page](auto const&, auto const&) {
 		    std::wstring report;
 		    size_t found = 0, ps5 = 0, other = 0, invalid = 0;
-		    for (const auto& folder : GameFolders()) {
+		    std::function<void(const std::filesystem::path&, int)> scan_folder;
+		    scan_folder = [&](const std::filesystem::path& folder, int depth) {
 			    for (const auto& package : PackagesIn(folder)) {
 				    ++found;
 				    if (const auto header = ReadPs5PkgHeader(package)) {
@@ -612,6 +613,14 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 					    report += L"Formato desconhecido ou cabeçalho inválido: " + package.filename().wstring() + L"\n";
 				    }
 			    }
+			    if (depth > 0) {
+				    for (const auto& subfolder : Subfolders(folder)) {
+					    scan_folder(subfolder, depth - 1);
+				    }
+			    }
+		    };
+		    for (const auto& folder : GameFolders()) {
+			    scan_folder(folder, 2);
 		    }
 		    if (found == 0) {
 			    report = L"Nenhum arquivo .pkg encontrado nas pastas de jogos configuradas.\n";
