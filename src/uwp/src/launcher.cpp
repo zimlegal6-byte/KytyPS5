@@ -683,7 +683,7 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 				    } else if (info->kind == PkgHeaderKind::Ps5Fih) {
 					    ++ps5;
 					    report += (info->structure_valid ? L"PS5 FIH com estrutura externa plausível: " : L"PS5 FIH com estrutura não validada: ") +
-					              package.filename().wstring() + L" (" + std::to_wstring(info->file_size) + L" bytes)\\n";
+					              package.filename().wstring() + L" (" + std::to_wstring(info->file_size) + L" bytes)\n";
 					    } else if (info->kind == PkgHeaderKind::Ps5Pkg) {
 					    ++ps5_pkg;
 					    report += L"Possível PS5 PKG: " + package.filename().wstring() + L" (" + std::to_wstring(info->file_size) + L" bytes)\n";
