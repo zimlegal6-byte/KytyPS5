@@ -4,6 +4,9 @@ name: Xbox build
 # with the install steps, and a title and a What's new section when given. It runs only when started: Actions > Xbox build > Run
 # workflow, on a branch.
 on:
+  push:
+    branches:
+      - overdrive-integration-analysis-2026-10-22
   workflow_dispatch:
     inputs:
       release:
