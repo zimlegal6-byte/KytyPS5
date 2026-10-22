@@ -25,9 +25,12 @@ struct PkgInspection {
 	PkgHeaderKind kind = PkgHeaderKind::Unknown;
 	uint64_t file_size = 0;
 	bool structure_valid = false;
+	uint32_t entry_count = 0;
+	uint64_t entry_table_offset = 0;
+	uint64_t entry_table_size = 0;
 	std::wstring detail;
 };
-// Reads the magic and performs bounded outer-layout checks for PS5 FIH packages. This does not validate signatures, decrypt, extract, install, or run a package.
+// Reads package markers and performs bounded header/table checks when the format matches a known layout. This does not validate signatures, decrypt, extract, install, or run a package.
 [[nodiscard]] std::optional<PkgInspection> InspectPkgFile(const std::filesystem::path& path);
 // The .pkg files directly in folder.
 [[nodiscard]] std::vector<std::filesystem::path> PackagesIn(const std::filesystem::path& folder);
