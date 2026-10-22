@@ -1,5 +1,7 @@
 #include "launcher.h"
 
+#include "gameSource.h"
+
 #include "fileAccess.h"
 #include "gameImages.h"
 #include "input.h"
