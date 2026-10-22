@@ -211,7 +211,7 @@ constexpr wchar_t LauncherMarkup[] = LR"xaml(
 
   <!-- Legal-content catalog entry point. External sources are opened only after a deliberate selection. -->
   <Grid x:Name="StorePanel" Visibility="Collapsed" Background="#F00B0E14">
-    <Border Width="620" MaxWidth="90%" Padding="28" CornerRadius="10"
+    <Border Width="620" Padding="28" CornerRadius="10"
             Background="#FF151B26" HorizontalAlignment="Center" VerticalAlignment="Center">
       <StackPanel Spacing="14">
         <TextBlock Text="Homebrew Store" Style="{StaticResource TitleTextBlockStyle}" />
