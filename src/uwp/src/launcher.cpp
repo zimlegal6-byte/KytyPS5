@@ -638,7 +638,23 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 														}
 														try {
 															auto props = props_op.GetResults();
-															final_status.Text(L"Arquivo copiado para Games: " + copied.Name() + L" (" + winrt::to_hstring(props.Size()) + L" bytes). Tamanho informado; conteúdo e compatibilidade não validados. Pressione Y para atualizar a biblioteca.");
+															std::wstring report = L"Arquivo copiado para Games: " + copied.Name() + L" (" + winrt::to_hstring(props.Size()) + L" bytes). ";
+															if (copied.FileType() == L".pkg") {
+																auto inspection = InspectPkgFile(std::filesystem::path(copied.Path()));
+																if (!inspection) {
+																	report += L"Não foi possível ler o cabeçalho PKG.";
+																} else if (inspection->kind == PkgHeaderKind::Ps4Cnt) {
+																	report += L"Cabeçalho 7F CNT reconhecido (padrão associado a PKG PS4); isso não confirma validade, licença ou execução.";
+																} else if (inspection->kind == PkgHeaderKind::Ps5Fih) {
+																	report += L"Cabeçalho 7F FIH reconhecido (padrão associado a PKG PS5); isso não confirma validade, licença ou execução.";
+																} else {
+																	report += L"Assinatura inicial desconhecida; arquivo não validado.";
+																}
+															} else {
+																report += L"Conteúdo e compatibilidade não validados.";
+															}
+															report += L" Pressione Y para atualizar a biblioteca.";
+															final_status.Text(report);
 														} catch (const winrt::hresult_error&) {
 															final_status.Text(L"Arquivo copiado, mas falhou a leitura das propriedades.");
 														}
