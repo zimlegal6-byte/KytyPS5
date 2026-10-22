@@ -21,6 +21,14 @@ namespace Kyty::Uwp {
 [[nodiscard]] std::optional<std::string>          ReadGameText(const std::filesystem::path& path);
 
 enum class PkgHeaderKind { Unknown, Ps4Cnt, Ps5Fih, Ps5Pkg };
+struct PkgEntryInfo {
+	uint32_t id = 0;
+	uint32_t type_flags = 0;
+	uint64_t offset = 0;
+	uint64_t size = 0;
+	std::string name;
+};
+
 struct PkgInspection {
 	PkgHeaderKind kind = PkgHeaderKind::Unknown;
 	uint64_t file_size = 0;
@@ -32,6 +40,7 @@ struct PkgInspection {
 	uint32_t drm_type = 0;
 	bool pfs_entry_found = false;
 	uint32_t encrypted_entry_count = 0;
+	std::vector<PkgEntryInfo> entries;
 	std::wstring detail;
 };
 // Reads package markers and performs bounded header/table checks when the format matches a known layout. This does not validate signatures, decrypt, extract, install, or run a package.
