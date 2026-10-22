@@ -640,7 +640,8 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 															auto props = props_op.GetResults();
 															std::wstring report = L"Arquivo copiado para Games: " + copied.Name() + L" (" + winrt::to_hstring(props.Size()) + L" bytes). ";
 															if (copied.FileType() == L".pkg") {
-																auto inspection = InspectPkgFile(std::filesystem::path(copied.Path()));
+																auto copied_path = copied.Path();
+															auto inspection = InspectPkgFile(std::filesystem::path(std::wstring(copied_path.c_str())));
 																if (!inspection) {
 																	report += L"Não foi possível ler o cabeçalho PKG.";
 																} else if (inspection->kind == PkgHeaderKind::Ps4Cnt) {
