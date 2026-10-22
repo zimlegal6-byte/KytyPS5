@@ -685,6 +685,16 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 					    report += (info->structure_valid ? L"PS5 FIH: estrutura externa aprovada nas verificações básicas: " : L"PS5 FIH: estrutura externa reprovada: ") +
 				              package.filename().wstring() + L" (" + std::to_wstring(info->file_size) + L" bytes)\n";
 				    report += L"  Detalhe: " + info->detail + L"\n";
+				    if (!info->content_id.empty()) {
+
+				    	report += L"  Content ID: " + winrt::to_hstring(info->content_id).c_str() + L"; DRM type: " + std::to_wstring(info->drm_type) + L".\n";
+
+				    	report += info->pfs_entry_found ? L"  Imagem PFS listada na tabela.\n" : L"  Nenhuma entrada PFS identificada na tabela.\n";
+
+				    	report += L"  Entradas marcadas como criptografadas: " + std::to_wstring(info->encrypted_entry_count) + L".\n";
+
+				    }
+
 				    if (info->entry_count > 0) {
 					    report += L"  Entradas: " + std::to_wstring(info->entry_count) +
 					              L"; deslocamento da tabela " + std::to_wstring(info->entry_table_offset) +
