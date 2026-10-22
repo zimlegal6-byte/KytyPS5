@@ -671,7 +671,7 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 	find(L"ScanPkgButton").as<xaml::Controls::Button>().Click(
 	    [page](auto const&, auto const&) {
 		    std::wstring report;
-		    size_t found = 0, ps4 = 0, ps5 = 0, unknown = 0, unreadable = 0;
+		    size_t found = 0, ps4 = 0, ps5 = 0, ps5_pkg = 0, unknown = 0, unreadable = 0;
 		    std::function<void(const std::filesystem::path&, int)> scan_folder;
 		    scan_folder = [&](const std::filesystem::path& folder, int depth) {
 			    for (const auto& package : PackagesIn(folder)) {
@@ -683,6 +683,9 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 				    } else if (info->kind == PkgHeaderKind::Ps5Fih) {
 					    ++ps5;
 					    report += L"Possível PS5 FIH: " + package.filename().wstring() + L" (" + std::to_wstring(info->file_size) + L" bytes)\n";
+				    } else if (info->kind == PkgHeaderKind::Ps5Pkg) {
+					    ++ps5_pkg;
+					    report += L"Possível PS5 PKG: " + package.filename().wstring() + L" (" + std::to_wstring(info->file_size) + L" bytes)\\n";
 				    } else if (info->kind == PkgHeaderKind::Ps4Cnt) {
 					    ++ps4;
 					    report += L"Possível CNT/PS4: " + package.filename().wstring() + L" (" + std::to_wstring(info->file_size) + L" bytes)\n";
@@ -704,7 +707,7 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 			    report = L"Nenhum arquivo .pkg encontrado nas pastas de jogos configuradas.\n";
 		    }
 		    report += L"\nResumo: " + std::to_wstring(found) + L" arquivos; " + std::to_wstring(ps5) +
-		              L" com marcador FIH; " + std::to_wstring(ps4) + L" com marcador CNT; " +
+		              L" com marcador FIH; " + std::to_wstring(ps5_pkg) + L" com marcador PKG/PS5; " + std::to_wstring(ps4) + L" com marcador CNT; " +
 		              std::to_wstring(unknown) + L" desconhecidos; " + std::to_wstring(unreadable) + L" ilegíveis.\n";
 		    report += L"Verificação de quatro bytes apenas: não valida assinatura criptográfica, metadados internos, licença, extração, instalação ou execução.";
 		    page.FindName(L"PkgScanStatus").as<xaml::Controls::TextBlock>().Text(report);
