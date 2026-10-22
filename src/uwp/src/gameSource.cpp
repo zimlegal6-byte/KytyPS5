@@ -115,6 +115,12 @@ bool IsArchivePath(const std::filesystem::path& path) {
 	return extension == L".zar";
 }
 
+bool IsPkgPath(const std::filesystem::path& path) {
+	auto extension = path.extension().wstring();
+	std::transform(extension.begin(), extension.end(), extension.begin(), [](wchar_t c) { return static_cast<wchar_t>(std::towlower(c)); });
+	return extension == L".pkg";
+}
+
 bool GameFileExists(const std::filesystem::path& path) {
 	std::filesystem::path archive;
 	std::string           inner;
@@ -158,10 +164,11 @@ std::optional<std::string> ReadGameText(const std::filesystem::path& path) {
 	return std::string(data->begin(), data->end());
 }
 
-std::vector<std::filesystem::path> ArchivesIn(const std::filesystem::path& folder) {
+namespace {
+std::vector<std::filesystem::path> FilesWithPattern(const std::filesystem::path& folder, const wchar_t* pattern) {
 	std::vector<std::filesystem::path> result;
-	WIN32_FIND_DATAW                   data {};
-	HANDLE find = FindFirstFileExFromAppW((folder / L"*.zar").c_str(), FindExInfoBasic, &data, FindExSearchNameMatch, nullptr, 0);
+	WIN32_FIND_DATAW data {};
+	HANDLE find = FindFirstFileExFromAppW((folder / pattern).c_str(), FindExInfoBasic, &data, FindExSearchNameMatch, nullptr, 0);
 	if (find == INVALID_HANDLE_VALUE) {
 		return result;
 	}
@@ -173,6 +180,15 @@ std::vector<std::filesystem::path> ArchivesIn(const std::filesystem::path& folde
 	FindClose(find);
 	std::sort(result.begin(), result.end());
 	return result;
+}
+} // namespace
+
+std::vector<std::filesystem::path> ArchivesIn(const std::filesystem::path& folder) {
+	return FilesWithPattern(folder, L"*.zar");
+}
+
+std::vector<std::filesystem::path> PackagesIn(const std::filesystem::path& folder) {
+	return FilesWithPattern(folder, L"*.pkg");
 }
 
 } // namespace Kyty::Uwp
