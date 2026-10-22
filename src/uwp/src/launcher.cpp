@@ -535,6 +535,52 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 	launcher->settings_button = find(L"SettingsButton").as<xaml::Controls::Button>();
 	launcher->settings_button.Click(
 	    [launcher](auto const&, auto const&) { launcher->actions.open_settings(); });
+
+	find(L"HomebrewButton").as<xaml::Controls::Button>().Click(
+	    [page](auto const&, auto const&) {
+		    page.FindName(L"HomebrewPanel").as<xaml::FrameworkElement>().Visibility(xaml::Visibility::Visible);
+		    page.FindName(L"HomebrewTopicButton").as<xaml::Controls::Button>().Focus(xaml::FocusState::Keyboard);
+	    });
+	find(L"HomebrewCloseButton").as<xaml::Controls::Button>().Click(
+	    [page, launcher](auto const&, auto const&) {
+		    page.FindName(L"HomebrewPanel").as<xaml::FrameworkElement>().Visibility(xaml::Visibility::Collapsed);
+		    EnsureCoverFocus(launcher);
+	    });
+	find(L"HomebrewTopicButton").as<xaml::Controls::Button>().Click(
+	    [](auto const&, auto const&) {
+		    winrt::Windows::System::Launcher::LaunchUriAsync(
+		        winrt::Windows::Foundation::Uri(L"https://github.com/topics/ps5-homebrew"));
+	    });
+	find(L"ItchHomebrewButton").as<xaml::Controls::Button>().Click(
+	    [](auto const&, auto const&) {
+		    winrt::Windows::System::Launcher::LaunchUriAsync(
+		        winrt::Windows::Foundation::Uri(L"https://itch.io/games/tag-homebrew"));
+	    });
+	find(L"ScanExfatButton").as<xaml::Controls::Button>().Click(
+	    [page](auto const&, auto const&) {
+		    std::wstring report;
+		    size_t found = 0;
+		    std::function<void(const std::filesystem::path&, int)> scan_folder;
+		    scan_folder = [&](const std::filesystem::path& folder, int depth) {
+			    for (const auto& image : ExfatImagesIn(folder)) {
+				    ++found;
+				    report += L"Imagem encontrada: " + image.wstring() + L"\n";
+			    }
+			    if (depth > 0) {
+				    for (const auto& subfolder : Subfolders(folder)) {
+					    scan_folder(subfolder, depth - 1);
+				    }
+			    }
+		    };
+		    for (const auto& folder : GameFolders()) {
+			    scan_folder(folder, 2);
+		    }
+		    if (found == 0) {
+			    report = L"Nenhum .exfat encontrado nas pastas de jogos configuradas. Copie o arquivo para uma dessas pastas e tente novamente.\n";
+		    }
+		    report += L"\nTotal: " + std::to_wstring(found) + L" imagem(ns). A busca não monta nem instala os arquivos.";
+		    page.FindName(L"ExfatScanStatus").as<xaml::Controls::TextBlock>().Text(report);
+	    });
 	find(L"TrophiesButton").as<xaml::Controls::Button>().Click(
 	    [launcher](auto const&, auto const&) { launcher->actions.open_trophies(); });
 	find(L"ControlsButton").as<xaml::Controls::Button>().Click(
