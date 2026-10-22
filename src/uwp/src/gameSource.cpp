@@ -146,12 +146,12 @@ bool HasPs5PkgSignature(const std::filesystem::path& path) {
 	return HasPackageMagic(path, magic);
 }
 
-bool IsPs5PkgHeaderStructurallyValid(const std::filesystem::path& path) {
-	// FIH header fields are little-endian u64s. Only read the fixed header region needed below.
+std::optional<Ps5PkgHeaderInfo> ReadPs5PkgHeader(const std::filesystem::path& path) {
+	// FIH fields are little-endian u64s. Read only the fixed header region needed below.
 	constexpr DWORD HEADER_SIZE = 0xa8;
 	HANDLE file = CreateFile2FromAppW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr);
 	if (file == INVALID_HANDLE_VALUE) {
-		return false;
+		return std::nullopt;
 	}
 	LARGE_INTEGER physicalSize {};
 	uint8_t header[HEADER_SIZE] {};
@@ -161,7 +161,7 @@ bool IsPs5PkgHeaderStructurallyValid(const std::filesystem::path& path) {
 	CloseHandle(file);
 	if (!readable || physicalSize.QuadPart < 0x10000 || header[0] != 0x7f || header[1] != 'F' || header[2] != 'I' ||
 	    header[3] != 'H' || (header[5] != 0x00 && header[5] != 0x80)) {
-		return false;
+		return std::nullopt;
 	}
 	const auto readU64 = [&](size_t offset) -> uint64_t {
 		uint64_t value = 0;
@@ -170,35 +170,41 @@ bool IsPs5PkgHeaderStructurallyValid(const std::filesystem::path& path) {
 		}
 		return value;
 	};
-	const uint64_t fileSize = static_cast<uint64_t>(physicalSize.QuadPart);
-	const uint64_t pfsOffset = readU64(0x10);
-	const uint64_t pfsSize = readU64(0x18);
-	const uint64_t cntOffset = readU64(0x58);
-	const uint64_t cntSize = readU64(0xa0);
-	// Subtraction-based bounds checks avoid offset+size overflow.
-	// The finalized format places PFS at 0x10000 and the embedded CNT after the PFS segment.
-	if (pfsOffset != 0x10000 || pfsSize == 0 || pfsSize > fileSize - pfsOffset) {
-		return false;
+	Ps5PkgHeaderInfo info;
+	info.file_size = static_cast<uint64_t>(physicalSize.QuadPart);
+	info.pfs_offset = readU64(0x10);
+	info.pfs_size = readU64(0x18);
+	info.cnt_offset = readU64(0x58);
+	info.cnt_size = readU64(0xa0);
+	info.retail_signed_byte = header[5] == 0x80;
+
+	// Segment bounds are checked with subtraction to avoid integer overflow.
+	if (info.pfs_offset != 0x10000 || info.pfs_size == 0 || info.pfs_size > info.file_size - info.pfs_offset) {
+		return std::nullopt;
 	}
-	const uint64_t pfsEnd = pfsOffset + pfsSize;
-	if (cntOffset < pfsEnd || cntOffset > fileSize || cntSize < 4 || cntSize > fileSize - cntOffset) {
-		return false;
+	const uint64_t pfsEnd = info.pfs_offset + info.pfs_size;
+	if (info.cnt_offset < pfsEnd || info.cnt_offset > info.file_size || info.cnt_size < 4 ||
+	    info.cnt_size > info.file_size - info.cnt_offset) {
+		return std::nullopt;
 	}
 
-	// Confirm the embedded metadata segment really starts with CNT, not just a plausible offset.
+	// Confirm the embedded metadata segment really starts with CNT.
 	HANDLE fileForCnt = CreateFile2FromAppW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr);
 	if (fileForCnt == INVALID_HANDLE_VALUE) {
-		return false;
+		return std::nullopt;
 	}
 	LARGE_INTEGER position {};
-	position.QuadPart = static_cast<LONGLONG>(cntOffset);
+	position.QuadPart = static_cast<LONGLONG>(info.cnt_offset);
 	uint8_t cntMagic[4] {};
 	DWORD cntRead = 0;
 	const bool seekOk = SetFilePointerEx(fileForCnt, position, nullptr, FILE_BEGIN) != 0;
 	const bool cntOk = seekOk && ReadFile(fileForCnt, cntMagic, sizeof(cntMagic), &cntRead, nullptr) != 0 &&
 	                   cntRead == sizeof(cntMagic);
 	CloseHandle(fileForCnt);
-	return cntOk && cntMagic[0] == 0x7f && cntMagic[1] == 'C' && cntMagic[2] == 'N' && cntMagic[3] == 'T';
+	if (!cntOk || cntMagic[0] != 0x7f || cntMagic[1] != 'C' || cntMagic[2] != 'N' || cntMagic[3] != 'T') {
+		return std::nullopt;
+	}
+	return info;
 }
 
 bool GameFileExists(const std::filesystem::path& path) {
