@@ -687,8 +687,8 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 				    report += L"  Detalhe: " + info->detail + L"\n";
 				    if (info->entry_count > 0) {
 					    report += L"  Entradas: " + std::to_wstring(info->entry_count) +
-					              L"; tabela em 0x" + std::to_wstring(info->entry_table_offset) +
-					              L"; tamanho " + std::to_wstring(info->entry_table_size) + L" bytes.\\n";
+					              L"; deslocamento da tabela " + std::to_wstring(info->entry_table_offset) +
+					              L"; tamanho " + std::to_wstring(info->entry_table_size) + L" bytes.\n";
 				    }
 					    } else if (info->kind == PkgHeaderKind::Ps5Pkg) {
 					    ++ps5_pkg;
