@@ -2,6 +2,7 @@
 
 #include "fileAccess.h"
 #include "gameImages.h"
+#include "gameSource.h"
 #include "input.h"
 #include "settings.h"
 #include "titleMusic.h"
@@ -229,6 +230,9 @@ constexpr wchar_t LauncherMarkup[] = LR"xaml(
             <TextBlock Text="Explorar jogos independentes; confirme compatibilidade e licença antes de baixar" FontSize="12" TextWrapping="Wrap" Opacity="0.75" />
           </StackPanel>
         </Button>
+        <Button x:Name="ScanPkgButton" Content="Examinar arquivos PKG locais" HorizontalAlignment="Stretch" Padding="12" />
+        <TextBlock x:Name="PkgScanStatus" Text="PKG: ainda não examinados. A leitura é experimental; este app não instala nem executa PKG."
+                   TextWrapping="Wrap" FontSize="12" />
         <TextBlock Text="Próxima etapa: catálogo próprio de homebrew com metadados, licença, origem e download verificado."
                    TextWrapping="Wrap" Opacity="0.75" FontSize="12" />
         <Button x:Name="StoreCloseButton" Content="Voltar à biblioteca" HorizontalAlignment="Right" />
@@ -583,6 +587,35 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 	    [](auto const&, auto const&) {
 		    winrt::Windows::System::Launcher::LaunchUriAsync(
 		        winrt::Windows::Foundation::Uri(L"https://itch.io/games/tag-homebrew"));
+	    });
+	find(L"ScanPkgButton").as<xaml::Controls::Button>().Click(
+	    [page](auto const&, auto const&) {
+		    std::wstring report;
+		    size_t found = 0, ps5 = 0, other = 0, invalid = 0;
+		    for (const auto& folder : GameFolders()) {
+			    for (const auto& package : PackagesIn(folder)) {
+				    ++found;
+				    if (const auto header = ReadPs5PkgHeader(package)) {
+					    ++ps5;
+					    report += L"PS5 FIH (estrutura reconhecida): " + package.filename().wstring() + L"\n";
+				    } else if (HasPs4PkgSignature(package)) {
+					    ++other;
+					    report += L"CNT / possível PKG de outra variante: " + package.filename().wstring() + L"\n";
+				    } else {
+					    ++invalid;
+					    report += L"Formato desconhecido ou cabeçalho inválido: " + package.filename().wstring() + L"\n";
+				    }
+			    }
+		    }
+		    if (found == 0) {
+			    report = L"Nenhum arquivo .pkg encontrado nas pastas de jogos configuradas.\n";
+		    }
+		    report += L"\nResumo: " + std::to_wstring(found) + L" arquivos; " + std::to_wstring(ps5) +
+		              L" com estrutura PS5 FIH reconhecida; " + std::to_wstring(other) + L" CNT/outros; " +
+		              std::to_wstring(invalid) + L" desconhecidos/inválidos.\n";
+		    report += L"Reconhecimento estrutural não valida assinatura, não descriptografa, não extrai e não executa o jogo.";
+		    auto status = page.FindName(L"PkgScanStatus").as<xaml::Controls::TextBlock>();
+		    status.Text(report);
 	    });
 	find(L"TrophiesButton").as<xaml::Controls::Button>().Click(
 	    [launcher](auto const&, auto const&) { launcher->actions.open_trophies(); });
