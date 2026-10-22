@@ -34,3 +34,5 @@ The panel currently links to discovery pages only. It does not download or insta
 ## Build and test status
 
 The repository's `.github/workflows/xbox.yml` creates the Xbox Developer Mode MSIX and dependency packages on a Windows runner. A successful code commit is not a successful build. The workflow must finish successfully and the resulting package must be installed and tested on an Xbox before the integration can be called functional.
+
+A push trigger is configured for this branch to request a cloud build. If GitHub Actions is enabled for the repository and the runner is available, the push should create a run; verify the run status and artifacts before treating the build as complete.
