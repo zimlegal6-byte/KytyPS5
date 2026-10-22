@@ -164,6 +164,10 @@ constexpr wchar_t LauncherMarkup[] = LR"xaml(
                     ToolTipService.ToolTip="Settings" AutomationProperties.Name="Settings">
               <SymbolIcon Symbol="Setting" />
             </Button>
+            <Button x:Name="StoreButton" Background="#FF202A3A" BorderThickness="0" Padding="10,6"
+                    ToolTipService.ToolTip="Homebrew store" AutomationProperties.Name="Homebrew store">
+              <TextBlock Text="STORE" FontSize="11" FontWeight="SemiBold" />
+            </Button>
           </StackPanel>
           <!-- The connected controllers: a dot marks the one used last, then its number, the controller symbol and its name, in columns. -->
           <Grid x:Name="Controllers" HorizontalAlignment="Right" ColumnSpacing="8" RowSpacing="4">
@@ -204,6 +208,33 @@ constexpr wchar_t LauncherMarkup[] = LR"xaml(
 
       <Border x:Name="Hints" Grid.Row="5" Style="{StaticResource HintBarStyle}" Margin="48,16,48,0" />
     </Grid>
+
+  <!-- Legal-content catalog entry point. External sources are opened only after a deliberate selection. -->
+  <Grid x:Name="StorePanel" Visibility="Collapsed" Background="#F00B0E14">
+    <Border Width="620" MaxWidth="90%" Padding="28" CornerRadius="10"
+            Background="#FF151B26" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <StackPanel Spacing="14">
+        <TextBlock Text="Homebrew Store" Style="{StaticResource TitleTextBlockStyle}" />
+        <TextBlock Text="Catálogo inicial de projetos e conteúdo distribuído legalmente. Esta versão abre as fontes oficiais; ainda não baixa nem instala pacotes dentro do KytyPS5."
+                   TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" />
+        <Button x:Name="HomebrewTopicButton" HorizontalAlignment="Stretch" Padding="12">
+          <StackPanel Spacing="3">
+            <TextBlock Text="Projetos PS5 homebrew no GitHub" FontWeight="SemiBold" />
+            <TextBlock Text="Abrir tópico público para encontrar projetos e lançamentos oficiais" FontSize="12" TextWrapping="Wrap" Opacity="0.75" />
+          </StackPanel>
+        </Button>
+        <Button x:Name="ItchHomebrewButton" HorizontalAlignment="Stretch" Padding="12">
+          <StackPanel Spacing="3">
+            <TextBlock Text="Jogos independentes no itch.io" FontWeight="SemiBold" />
+            <TextBlock Text="Explorar jogos independentes; confirme compatibilidade e licença antes de baixar" FontSize="12" TextWrapping="Wrap" Opacity="0.75" />
+          </StackPanel>
+        </Button>
+        <TextBlock Text="Próxima etapa: catálogo próprio de homebrew com metadados, licença, origem e download verificado."
+                   TextWrapping="Wrap" Opacity="0.75" FontSize="12" />
+        <Button x:Name="StoreCloseButton" Content="Voltar à biblioteca" HorizontalAlignment="Right" />
+      </StackPanel>
+    </Border>
+  </Grid>
 
   <!-- A game's options (Menu button, right click), in the system's look: its details, play, cheats, hide. -->
   <Grid x:Name="Options" Visibility="Collapsed">
@@ -535,6 +566,24 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 	launcher->settings_button = find(L"SettingsButton").as<xaml::Controls::Button>();
 	launcher->settings_button.Click(
 	    [launcher](auto const&, auto const&) { launcher->actions.open_settings(); });
+	auto store_panel = find(L"StorePanel").as<xaml::FrameworkElement>();
+	find(L"StoreButton").as<xaml::Controls::Button>().Click(
+	    [store_panel](auto const&, auto const&) { store_panel.Visibility(xaml::Visibility::Visible); });
+	find(L"StoreCloseButton").as<xaml::Controls::Button>().Click(
+	    [store_panel, launcher](auto const&, auto const&) {
+		    store_panel.Visibility(xaml::Visibility::Collapsed);
+		    EnsureCoverFocus(launcher);
+	    });
+	find(L"HomebrewTopicButton").as<xaml::Controls::Button>().Click(
+	    [](auto const&, auto const&) {
+		    winrt::Windows::System::Launcher::LaunchUriAsync(
+		        winrt::Windows::Foundation::Uri(L"https://github.com/topics/ps5-homebrew"));
+	    });
+	find(L"ItchHomebrewButton").as<xaml::Controls::Button>().Click(
+	    [](auto const&, auto const&) {
+		    winrt::Windows::System::Launcher::LaunchUriAsync(
+		        winrt::Windows::Foundation::Uri(L"https://itch.io/games/tag-homebrew"));
+	    });
 	find(L"TrophiesButton").as<xaml::Controls::Button>().Click(
 	    [launcher](auto const&, auto const&) { launcher->actions.open_trophies(); });
 	find(L"ControlsButton").as<xaml::Controls::Button>().Click(
