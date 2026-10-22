@@ -15,8 +15,10 @@ namespace Kyty::Uwp {
 [[nodiscard]] bool IsArchivePath(const std::filesystem::path& path);
 // Detects a .pkg filename; this does not imply that the package can be loaded.
 [[nodiscard]] bool IsPkgPath(const std::filesystem::path& path);
-// Checks the four-byte PS4 PKG signature using a bounded read.
+// Checks the four-byte PS4 metadata-container signature (7F CNT). This alone does not identify a PS5 installable PKG.
 [[nodiscard]] bool HasPs4PkgSignature(const std::filesystem::path& path);
+// Checks the PS5 finalized-package signature (7F FIH) using a bounded read.
+[[nodiscard]] bool HasPs5PkgSignature(const std::filesystem::path& path);
 
 // Whether the file exists.
 [[nodiscard]] bool GameFileExists(const std::filesystem::path& path);
