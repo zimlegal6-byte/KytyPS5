@@ -23,7 +23,7 @@ The uploaded binary's raw bytes were not independently parsed in this tool sessi
 
 ## PKG support status
 
-The launcher now has a diagnostic scanner that reads only the first four bytes and file size, and labels the magic as possible CNT/PS4, FIH/PS5, or unknown. This is deliberately not a complete parser: it does not validate cryptographic signatures, internal metadata, offsets, bounds, licenses, or integrity. The Xbox UWP app still has no PKG extraction, installation, or execution pipeline. A complete implementation requires separately validated parsers, bounds/overflow checks, trusted legal test fixtures, and clear separation between recognition, extraction, installation, and execution. Do not infer that parsing or extracting a package makes it runnable.
+The launcher has a diagnostic scanner that reads only the first four bytes and file size, and labels the magic as possible CNT/PS4, FIH/PS5, or unknown. This is deliberately not a complete parser: it does not validate cryptographic signatures, internal metadata, offsets, bounds, licenses, or integrity. The Xbox UWP app still has no PKG extraction, installation, or execution pipeline. A complete implementation requires separately validated parsers, bounds/overflow checks, trusted legal test fixtures, and clear separation between recognition, extraction, installation, and execution. Do not infer that parsing or extracting a package makes it runnable.
 
 No package decryption, signature bypass, DRM circumvention, or unauthorized commercial-game distribution is part of this branch.
 
@@ -33,6 +33,6 @@ The panel currently links to discovery pages only. It does not download or insta
 
 ## Build and test status
 
-The repository's `.github/workflows/xbox.yml` creates the Xbox Developer Mode MSIX and dependency packages on a Windows runner. A successful code commit is not a successful build. The workflow must finish successfully and the resulting package must be installed and tested on an Xbox before the integration can be called functional.
+The repository's `.github/workflows/xbox.yml` creates the Xbox Developer Mode MSIX and dependency packages on a Windows runner. The branch `overdrive-integration-analysis-2026-10-22` contains the integration diagnostics and is the branch that must be built to validate these changes. A successful code commit is not a successful build. The workflow must finish successfully and the resulting package must be installed and tested on an Xbox before the integration can be called functional.
 
-A push trigger is configured for this branch to request a cloud build. If GitHub Actions is enabled for the repository and the runner is available, the push should create a run; verify the run status and artifacts before treating the build as complete.
+The workflow has a push trigger configured for this branch. This commit is intended to trigger a cloud build of the correct branch. Verify the actual run status and artifacts before treating the build as complete.
