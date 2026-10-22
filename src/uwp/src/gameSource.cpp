@@ -121,6 +121,18 @@ bool IsPkgPath(const std::filesystem::path& path) {
 	return extension == L".pkg";
 }
 
+bool HasPs4PkgSignature(const std::filesystem::path& path) {
+	HANDLE file = CreateFile2FromAppW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr);
+	if (file == INVALID_HANDLE_VALUE) {
+		return false;
+	}
+	uint8_t magic[4] {};
+	DWORD read = 0;
+	const bool ok = ReadFile(file, magic, sizeof(magic), &read, nullptr) != 0 && read == sizeof(magic);
+	CloseHandle(file);
+	return ok && magic[0] == 0x7f && magic[1] == 'C' && magic[2] == 'N' && magic[3] == 'T';
+}
+
 bool GameFileExists(const std::filesystem::path& path) {
 	std::filesystem::path archive;
 	std::string           inner;
