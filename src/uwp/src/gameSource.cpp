@@ -121,7 +121,8 @@ bool IsPkgPath(const std::filesystem::path& path) {
 	return extension == L".pkg";
 }
 
-bool HasPs4PkgSignature(const std::filesystem::path& path) {
+namespace {
+bool HasPackageMagic(const std::filesystem::path& path, const uint8_t (&expected)[4]) {
 	HANDLE file = CreateFile2FromAppW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr);
 	if (file == INVALID_HANDLE_VALUE) {
 		return false;
@@ -130,7 +131,19 @@ bool HasPs4PkgSignature(const std::filesystem::path& path) {
 	DWORD read = 0;
 	const bool ok = ReadFile(file, magic, sizeof(magic), &read, nullptr) != 0 && read == sizeof(magic);
 	CloseHandle(file);
-	return ok && magic[0] == 0x7f && magic[1] == 'C' && magic[2] == 'N' && magic[3] == 'T';
+	return ok && std::equal(std::begin(magic), std::end(magic), std::begin(expected));
+}
+} // namespace
+
+bool HasPs4PkgSignature(const std::filesystem::path& path) {
+	const uint8_t magic[4] {0x7f, 'C', 'N', 'T'};
+	return HasPackageMagic(path, magic);
+}
+
+bool HasPs5PkgSignature(const std::filesystem::path& path) {
+	// PS5 finalized installable packages use FIH at offset 0; CNT is the embedded metadata container.
+	const uint8_t magic[4] {0x7f, 'F', 'I', 'H'};
+	return HasPackageMagic(path, magic);
 }
 
 bool GameFileExists(const std::filesystem::path& path) {
