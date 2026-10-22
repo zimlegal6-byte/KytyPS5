@@ -217,6 +217,8 @@ constexpr wchar_t LauncherMarkup[] = LR"xaml(
           <TextBlock Text="Overdrive.exfat é uma imagem exFAT para ShadowMount+ em um PS5 desbloqueado. O KytyPS5-Xbox não pode instalar nem executar essa imagem diretamente." TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" />
           <Button x:Name="HomebrewTopicButton" Content="Projetos PS5 homebrew no GitHub" HorizontalAlignment="Stretch" Padding="12" />
           <Button x:Name="ItchHomebrewButton" Content="Jogos independentes e homebrew no itch.io" HorizontalAlignment="Stretch" Padding="12" />
+          <Button x:Name="ScanPkgButton" Content="Examinar cabeçalhos de arquivos PKG" HorizontalAlignment="Stretch" Padding="12" />
+          <TextBlock x:Name="PkgScanStatus" Text="PKG: nenhuma verificação realizada. Apenas a assinatura estrutural inicial será lida." TextWrapping="Wrap" FontSize="12" />
           <Button x:Name="ScanExfatButton" Content="Procurar imagens .exfat nas pastas de jogos" HorizontalAlignment="Stretch" Padding="12" />
           <TextBlock x:Name="ExfatScanStatus" Text="Nenhuma verificação realizada." TextWrapping="Wrap" FontSize="12" />
           <TextBlock Text="Compatibilidade pendente: leitor EXFAT e runtime PS5 compatível. Detectar um arquivo não significa instalá-lo." TextWrapping="Wrap" Opacity="0.8" FontSize="12" />
@@ -576,6 +578,48 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 	    [](auto const&, auto const&) {
 		    winrt::Windows::System::Launcher::LaunchUriAsync(
 		        winrt::Windows::Foundation::Uri(L"https://itch.io/games/tag-homebrew"));
+	    });
+
+	find(L"ScanPkgButton").as<xaml::Controls::Button>().Click(
+	    [page](auto const&, auto const&) {
+		    std::wstring report;
+		    size_t found = 0, ps4 = 0, ps5 = 0, unknown = 0, unreadable = 0;
+		    std::function<void(const std::filesystem::path&, int)> scan_folder;
+		    scan_folder = [&](const std::filesystem::path& folder, int depth) {
+			    for (const auto& package : PackagesIn(folder)) {
+				    ++found;
+				    const auto info = InspectPkgFile(package);
+				    if (!info) {
+					    ++unreadable;
+					    report += L"Não foi possível ler cabeçalho/tamanho: " + package.filename().wstring() + L"\n";
+				    } else if (info->kind == PkgHeaderKind::Ps5Fih) {
+					    ++ps5;
+					    report += L"Possível PS5 FIH: " + package.filename().wstring() + L" (" + std::to_wstring(info->file_size) + L" bytes)\n";
+				    } else if (info->kind == PkgHeaderKind::Ps4Cnt) {
+					    ++ps4;
+					    report += L"Possível CNT/PS4: " + package.filename().wstring() + L" (" + std::to_wstring(info->file_size) + L" bytes)\n";
+				    } else {
+					    ++unknown;
+					    report += L"Assinatura desconhecida: " + package.filename().wstring() + L" (" + std::to_wstring(info->file_size) + L" bytes)\n";
+				    }
+			    }
+			    if (depth > 0) {
+				    for (const auto& subfolder : Subfolders(folder)) {
+					    scan_folder(subfolder, depth - 1);
+				    }
+			    }
+		    };
+		    for (const auto& folder : GameFolders()) {
+			    scan_folder(folder, 2);
+		    }
+		    if (found == 0) {
+			    report = L"Nenhum arquivo .pkg encontrado nas pastas de jogos configuradas.\n";
+		    }
+		    report += L"\nResumo: " + std::to_wstring(found) + L" arquivos; " + std::to_wstring(ps5) +
+		              L" com marcador FIH; " + std::to_wstring(ps4) + L" com marcador CNT; " +
+		              std::to_wstring(unknown) + L" desconhecidos; " + std::to_wstring(unreadable) + L" ilegíveis.\n";
+		    report += L"Verificação de quatro bytes apenas: não valida assinatura criptográfica, metadados internos, licença, extração, instalação ou execução.";
+		    page.FindName(L"PkgScanStatus").as<xaml::Controls::TextBlock>().Text(report);
 	    });
 	find(L"ScanExfatButton").as<xaml::Controls::Button>().Click(
 	    [page](auto const&, auto const&) {
