@@ -22,6 +22,8 @@ namespace Kyty::Uwp {
 
 // The .zar files directly in `folder`.
 [[nodiscard]] std::vector<std::filesystem::path> ArchivesIn(const std::filesystem::path& folder);
+// EXFAT image files directly in `folder`; detection does not mount or install them.
+[[nodiscard]] std::vector<std::filesystem::path> ExfatImagesIn(const std::filesystem::path& folder);
 
 } // namespace Kyty::Uwp
 
