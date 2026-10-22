@@ -707,7 +707,8 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 						              L" tipo=0x" + std::to_wstring(entry.type_flags) +
 						              L" tamanho=" + std::to_wstring(entry.size) + L" bytes";
 						    if (!entry.name.empty()) {
-							    report += L" nome=" + winrt::to_hstring(entry.name).c_str();
+							    report += L" nome=";
+							    report += std::wstring(entry.name.begin(), entry.name.end());
 						    }
 						    if ((entry.type_flags & 0x80000000u) != 0) report += L" [criptografada]";
 						    if ((entry.type_flags & 0xFFFFu) == 0x0001u) report += L" [PFS]";
