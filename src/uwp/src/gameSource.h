@@ -13,6 +13,8 @@ namespace Kyty::Uwp {
 
 // A .zar file (by its name).
 [[nodiscard]] bool IsArchivePath(const std::filesystem::path& path);
+// Detects a .pkg filename; this does not imply that the package can be loaded.
+[[nodiscard]] bool IsPkgPath(const std::filesystem::path& path);
 
 // Whether the file exists.
 [[nodiscard]] bool GameFileExists(const std::filesystem::path& path);
@@ -22,6 +24,8 @@ namespace Kyty::Uwp {
 
 // The .zar files directly in `folder`.
 [[nodiscard]] std::vector<std::filesystem::path> ArchivesIn(const std::filesystem::path& folder);
+// The .pkg files directly in `folder`.
+[[nodiscard]] std::vector<std::filesystem::path> PackagesIn(const std::filesystem::path& folder);
 
 } // namespace Kyty::Uwp
 
