@@ -160,7 +160,7 @@ bool IsPs5PkgHeaderStructurallyValid(const std::filesystem::path& path) {
 	                      ReadFile(file, header, HEADER_SIZE, &read, nullptr) != 0 && read == HEADER_SIZE;
 	CloseHandle(file);
 	if (!readable || physicalSize.QuadPart < 0x10000 || header[0] != 0x7f || header[1] != 'F' || header[2] != 'I' ||
-	    header[3] != 'H') {
+	    header[3] != 'H' || (header[5] != 0x00 && header[5] != 0x80)) {
 		return false;
 	}
 	const auto readU64 = [&](size_t offset) -> uint64_t {
@@ -176,8 +176,13 @@ bool IsPs5PkgHeaderStructurallyValid(const std::filesystem::path& path) {
 	const uint64_t cntOffset = readU64(0x58);
 	const uint64_t cntSize = readU64(0xa0);
 	// Subtraction-based bounds checks avoid offset+size overflow.
-	return pfsOffset >= 0x10000 && pfsOffset <= fileSize && pfsSize > 0 && pfsSize <= fileSize - pfsOffset &&
-	       cntOffset >= 0x10000 && cntOffset <= fileSize && cntSize > 0 && cntSize <= fileSize - cntOffset;
+	// The finalized format places PFS at 0x10000 and the embedded CNT after the PFS segment.
+	if (pfsOffset != 0x10000 || pfsSize == 0 || pfsSize > fileSize - pfsOffset) {
+		return false;
+	}
+	const uint64_t pfsEnd = pfsOffset + pfsSize;
+	return cntOffset >= pfsEnd && cntOffset <= fileSize && cntSize >= 4 && cntSize <= fileSize - cntOffset &&
+	       header[5] <= 0x80;
 }
 
 bool GameFileExists(const std::filesystem::path& path) {
