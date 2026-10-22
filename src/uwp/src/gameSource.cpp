@@ -290,6 +290,7 @@ std::optional<PkgInspection> InspectPkgFile(const std::filesystem::path& path) {
 						entries_valid = false;
 						break;
 					}
+					const uint32_t entry_id = read_be32(entry);
 					const uint32_t entry_type = read_be32(entry + 4);
 					if ((entry_type & 0xFFFFu) == 0x0001u) result.pfs_entry_found = true;
 					if ((entry_type & 0x80000000u) != 0) ++result.encrypted_entry_count;
@@ -297,7 +298,29 @@ std::optional<PkgInspection> InspectPkgFile(const std::filesystem::path& path) {
 					const uint64_t entry_size = read_be64(entry + 16);
 					if (entry_offset > result.file_size || entry_size > result.file_size - entry_offset) {
 						entries_valid = false;
+						break;
 					}
+					PkgEntryInfo metadata;
+					metadata.id = entry_id;
+					metadata.type_flags = entry_type;
+					metadata.offset = entry_offset;
+					metadata.size = entry_size;
+					// Entry names are informational only: read at most 256 bytes and keep printable ASCII.
+					if (entry_size > 0) {
+						uint8_t name_data[256] {};
+						const auto name_size = static_cast<DWORD>((std::min)(entry_size, sizeof(name_data)));
+						LARGE_INTEGER name_position {};
+						name_position.QuadPart = static_cast<LONGLONG>(entry_offset);
+						DWORD name_read = 0;
+						if (SetFilePointerEx(file, name_position, nullptr, FILE_BEGIN) != 0 &&
+						    ReadFile(file, name_data, name_size, &name_read, nullptr) != 0 && name_read == name_size) {
+							for (DWORD n = 0; n < name_read && name_data[n] != 0; ++n) {
+								if (name_data[n] < 0x20 || name_data[n] > 0x7E) { metadata.name.clear(); break; }
+								metadata.name.push_back(static_cast<char>(name_data[n]));
+							}
+						}
+					}
+					result.entries.push_back(std::move(metadata));
 				}
 				if (entries_valid) {
 					result.structure_valid = true;
