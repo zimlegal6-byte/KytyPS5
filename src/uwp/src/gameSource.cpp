@@ -175,4 +175,21 @@ std::vector<std::filesystem::path> ArchivesIn(const std::filesystem::path& folde
 	return result;
 }
 
+std::vector<std::filesystem::path> ExfatImagesIn(const std::filesystem::path& folder) {
+	std::vector<std::filesystem::path> result;
+	WIN32_FIND_DATAW data {};
+	HANDLE find = FindFirstFileExFromAppW((folder / L"*.exfat").c_str(), FindExInfoBasic, &data, FindExSearchNameMatch, nullptr, 0);
+	if (find == INVALID_HANDLE_VALUE) {
+		return result;
+	}
+	do {
+		if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+			result.push_back(folder / data.cFileName);
+		}
+	} while (FindNextFileW(find, &data));
+	FindClose(find);
+	std::sort(result.begin(), result.end());
+	return result;
+}
+
 } // namespace Kyty::Uwp
