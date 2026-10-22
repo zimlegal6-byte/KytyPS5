@@ -605,6 +605,10 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 					              std::to_wstring(header->cnt_offset) + L" + " +
 					              std::to_wstring(header->cnt_size) + L"\n  Marcador: " +
 					              (header->retail_signed_byte ? L"retail" : L"debug/nao-retail") + L"\n";
+				    } else if (HasPs5PkgSignature(package)) {
+					    ++invalid;
+					    report += L"Assinatura FIH encontrada, mas campos não passaram na validação experimental: " +
+					              package.filename().wstring() + L"\n";
 				    } else if (HasPs4PkgSignature(package)) {
 					    ++other;
 					    report += L"CNT / possível PKG de outra variante: " + package.filename().wstring() + L"\n";
