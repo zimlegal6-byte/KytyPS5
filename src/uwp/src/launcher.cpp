@@ -703,8 +703,8 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 					    for (size_t entry_index = 0; entry_index < shown_entries; ++entry_index) {
 						    const auto& entry = info->entries[entry_index];
 						    report += L"    [" + std::to_wstring(entry_index) + L"] ID=0x" +
-						              winrt::to_hstring(std::format(L"{:08X}", entry.id)).c_str() +
-						              L" tipo=0x" + winrt::to_hstring(std::format(L"{:08X}", entry.type_flags)).c_str() +
+						              std::to_wstring(entry.id) +
+						              L" tipo=0x" + std::to_wstring(entry.type_flags) +
 						              L" tamanho=" + std::to_wstring(entry.size) + L" bytes";
 						    if (!entry.name.empty()) {
 							    report += L" nome=" + winrt::to_hstring(entry.name).c_str();
