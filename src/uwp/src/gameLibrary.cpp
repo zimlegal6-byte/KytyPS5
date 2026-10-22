@@ -52,6 +52,10 @@ void ScanFolder(const std::filesystem::path& folder, int depth, std::vector<Game
 		games.push_back(ReadGame(folder));
 		return;
 	}
+	// PKG files are detected for diagnostics, but not added as runnable games until extraction/loading exists.
+	for (const auto& package: PackagesIn(folder)) {
+		Log("PKG detected: %ls (not runnable yet; package extraction/loading is not implemented)\\n", package.c_str());
+	}
 	// .zar archives: a game dump the emulator reads in place
 	for (const auto& archive: ArchivesIn(folder)) {
 		if (GameFileExists(archive / L"eboot.bin")) {
