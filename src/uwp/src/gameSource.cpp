@@ -211,10 +211,47 @@ std::optional<PkgInspection> InspectPkgFile(const std::filesystem::path& path) {
 	result.file_size = static_cast<uint64_t>(size.QuadPart);
 	if (magic[0] == 0x7F && magic[1] == 'C' && magic[2] == 'N' && magic[3] == 'T') {
 		result.kind = PkgHeaderKind::Ps4Cnt;
+		result.detail = L"CNT marker only; internal structure not validated.";
 	} else if (magic[0] == 0x7F && magic[1] == 'F' && magic[2] == 'I' && magic[3] == 'H') {
 		result.kind = PkgHeaderKind::Ps5Fih;
+		// Bounded checks of the FIH wrapper and embedded CNT location. This is not signature verification.
+		uint8_t header[0x60] {};
+		LARGE_INTEGER zero {};
+		DWORD header_read = 0;
+		bool valid = size.QuadPart >= 0x10000 + 0x5A0 &&
+		             SetFilePointerEx(file, zero, nullptr, FILE_BEGIN) != 0 &&
+		             ReadFile(file, header, sizeof(header), &header_read, nullptr) != 0 &&
+		             header_read == sizeof(header);
+		if (valid) {
+			auto read_le64 = [](const uint8_t* p) -> uint64_t {
+				uint64_t value = 0;
+				for (unsigned i = 0; i < 8; ++i) value |= static_cast<uint64_t>(p[i]) << (i * 8);
+				return value;
+			};
+			const uint64_t pfs_offset = read_le64(header + 0x10);
+			const uint64_t pfs_size = read_le64(header + 0x18);
+			const uint64_t cnt_offset = read_le64(header + 0x58);
+			valid = pfs_offset == 0x10000 && pfs_offset <= result.file_size &&
+			        pfs_size <= result.file_size - pfs_offset &&
+			        cnt_offset >= pfs_offset + pfs_size &&
+			        cnt_offset <= result.file_size - 0x5A0;
+			if (valid) {
+				LARGE_INTEGER position {};
+				position.QuadPart = static_cast<LONGLONG>(cnt_offset);
+				uint8_t cnt_magic[4] {};
+				DWORD cnt_read = 0;
+				valid = SetFilePointerEx(file, position, nullptr, FILE_BEGIN) != 0 &&
+				        ReadFile(file, cnt_magic, sizeof(cnt_magic), &cnt_read, nullptr) != 0 &&
+				        cnt_read == sizeof(cnt_magic) && cnt_magic[0] == 0x7F &&
+				        cnt_magic[1] == 'C' && cnt_magic[2] == 'N' && cnt_magic[3] == 'T';
+			}
+		}
+		result.structure_valid = valid;
+		result.detail = valid ? L"FIH outer layout and embedded CNT bounds validated; cryptographic signature and payload not validated."
+		                      : L"FIH marker found, but outer layout or embedded CNT bounds are invalid.";
 	} else if (magic[0] == 0x7F && magic[1] == 'P' && magic[2] == 'K' && magic[3] == 'G') {
 		result.kind = PkgHeaderKind::Ps5Pkg;
+		result.detail = L"PKG marker only; internal structure not validated.";
 	}
 	return result;
 }
