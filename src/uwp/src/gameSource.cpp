@@ -146,6 +146,40 @@ bool HasPs5PkgSignature(const std::filesystem::path& path) {
 	return HasPackageMagic(path, magic);
 }
 
+bool IsPs5PkgHeaderStructurallyValid(const std::filesystem::path& path) {
+	// FIH header fields are little-endian u64s. Only read the fixed header region needed below.
+	constexpr DWORD HEADER_SIZE = 0xa8;
+	HANDLE file = CreateFile2FromAppW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr);
+	if (file == INVALID_HANDLE_VALUE) {
+		return false;
+	}
+	LARGE_INTEGER physicalSize {};
+	uint8_t header[HEADER_SIZE] {};
+	DWORD read = 0;
+	const bool readable = GetFileSizeEx(file, &physicalSize) != 0 && physicalSize.QuadPart >= HEADER_SIZE &&
+	                      ReadFile(file, header, HEADER_SIZE, &read, nullptr) != 0 && read == HEADER_SIZE;
+	CloseHandle(file);
+	if (!readable || physicalSize.QuadPart < 0x10000 || header[0] != 0x7f || header[1] != 'F' || header[2] != 'I' ||
+	    header[3] != 'H') {
+		return false;
+	}
+	const auto readU64 = [&](size_t offset) -> uint64_t {
+		uint64_t value = 0;
+		for (size_t i = 0; i < 8; ++i) {
+			value |= static_cast<uint64_t>(header[offset + i]) << (i * 8);
+		}
+		return value;
+	};
+	const uint64_t fileSize = static_cast<uint64_t>(physicalSize.QuadPart);
+	const uint64_t pfsOffset = readU64(0x10);
+	const uint64_t pfsSize = readU64(0x18);
+	const uint64_t cntOffset = readU64(0x58);
+	const uint64_t cntSize = readU64(0xa0);
+	// Subtraction-based bounds checks avoid offset+size overflow.
+	return pfsOffset >= 0x10000 && pfsOffset <= fileSize && pfsSize > 0 && pfsSize <= fileSize - pfsOffset &&
+	       cntOffset >= 0x10000 && cntOffset <= fileSize && cntSize > 0 && cntSize <= fileSize - cntOffset;
+}
+
 bool GameFileExists(const std::filesystem::path& path) {
 	std::filesystem::path archive;
 	std::string           inner;
