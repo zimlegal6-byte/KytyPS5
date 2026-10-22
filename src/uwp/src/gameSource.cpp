@@ -271,6 +271,8 @@ std::optional<PkgInspection> InspectPkgFile(const std::filesystem::path& path) {
 			const uint64_t table_size = read_be32(pkg_header + 0x14);
 			const uint64_t body_offset = read_be64(pkg_header + 0x18);
 			const uint64_t body_size = read_be64(pkg_header + 0x20);
+			result.drm_type = read_be32(pkg_header + 0x60);
+			for (size_t i = 0; i < 36 && pkg_header[0x30 + i] != 0; ++i) result.content_id.push_back(static_cast<char>(pkg_header[0x30 + i]));
 			const bool table_bounds = count > 0 && count <= 100000 &&
 			    table_offset >= sizeof(pkg_header) && table_offset <= result.file_size &&
 			    table_size >= count * 32 && table_size <= result.file_size - table_offset &&
@@ -288,6 +290,9 @@ std::optional<PkgInspection> InspectPkgFile(const std::filesystem::path& path) {
 						entries_valid = false;
 						break;
 					}
+					const uint32_t entry_type = read_be32(entry + 4);
+					if ((entry_type & 0xFFFFu) == 0x0001u) result.pfs_entry_found = true;
+					if ((entry_type & 0x80000000u) != 0) ++result.encrypted_entry_count;
 					const uint64_t entry_offset = read_be64(entry + 8);
 					const uint64_t entry_size = read_be64(entry + 16);
 					if (entry_offset > result.file_size || entry_size > result.file_size - entry_offset) {
