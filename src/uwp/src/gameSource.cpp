@@ -277,4 +277,8 @@ std::vector<std::filesystem::path> PackagesIn(const std::filesystem::path& folde
 	return FilesWithPattern(folder, L"*.pkg");
 }
 
+std::vector<std::filesystem::path> ExfatImagesIn(const std::filesystem::path& folder) {
+	return FilesWithPattern(folder, L"*.exfat");
+}
+
 } // namespace Kyty::Uwp
