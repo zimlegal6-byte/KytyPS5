@@ -682,8 +682,9 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 					    report += L"Não foi possível ler cabeçalho/tamanho: " + package.filename().wstring() + L"\n";
 				    } else if (info->kind == PkgHeaderKind::Ps5Fih) {
 					    ++ps5;
-					    report += L"Possível PS5 FIH: " + package.filename().wstring() + L" (" + std::to_wstring(info->file_size) + L" bytes)\n";
-				    } else if (info->kind == PkgHeaderKind::Ps5Pkg) {
+					    report += (info->structure_valid ? L"PS5 FIH com estrutura externa plausível: " : L"PS5 FIH com estrutura não validada: ") +
+					              package.filename().wstring() + L" (" + std::to_wstring(info->file_size) + L" bytes)\\n";
+					    } else if (info->kind == PkgHeaderKind::Ps5Pkg) {
 					    ++ps5_pkg;
 					    report += L"Possível PS5 PKG: " + package.filename().wstring() + L" (" + std::to_wstring(info->file_size) + L" bytes)\n";
 				    } else if (info->kind == PkgHeaderKind::Ps4Cnt) {
@@ -709,7 +710,7 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 		    report += L"\nResumo: " + std::to_wstring(found) + L" arquivos; " + std::to_wstring(ps5) +
 		              L" com marcador FIH; " + std::to_wstring(ps5_pkg) + L" com marcador PKG/PS5; " + std::to_wstring(ps4) + L" com marcador CNT; " +
 		              std::to_wstring(unknown) + L" desconhecidos; " + std::to_wstring(unreadable) + L" ilegíveis.\n";
-		    report += L"Verificação de quatro bytes apenas: não valida assinatura criptográfica, metadados internos, licença, extração, instalação ou execução.";
+		    report += L"FIH: validação limitada do layout externo e dos limites do CNT embutido; não valida assinatura criptográfica, metadados de entradas, licença, extração, instalação ou execução. Outros marcadores são reconhecimento inicial apenas.";
 		    page.FindName(L"PkgScanStatus").as<xaml::Controls::TextBlock>().Text(report);
 	    });
 	find(L"ScanExfatButton").as<xaml::Controls::Button>().Click(
