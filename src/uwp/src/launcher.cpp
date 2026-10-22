@@ -160,6 +160,7 @@ constexpr wchar_t LauncherMarkup[] = LR"xaml(
                 </Canvas>
               </Viewbox>
             </Button>
+            <Button x:Name="HomebrewButton" Background="Transparent" BorderThickness="0" Padding="8" ToolTipService.ToolTip="Homebrew / Overdrive" AutomationProperties.Name="Homebrew / Overdrive"><SymbolIcon Symbol="Download" /></Button>
             <Button x:Name="SettingsButton" Background="Transparent" BorderThickness="0" Padding="8"
                     ToolTipService.ToolTip="Settings" AutomationProperties.Name="Settings">
               <SymbolIcon Symbol="Setting" />
@@ -204,6 +205,25 @@ constexpr wchar_t LauncherMarkup[] = LR"xaml(
 
       <Border x:Name="Hints" Grid.Row="5" Style="{StaticResource HintBarStyle}" Margin="48,16,48,0" />
     </Grid>
+
+
+  <!-- Homebrew sources and diagnostic-only image discovery. -->
+  <Grid x:Name="HomebrewPanel" Visibility="Collapsed" Background="#F00B0E14">
+    <Border Width="660" MaxHeight="680" Padding="28" CornerRadius="10" Background="#FF151B26" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="620">
+        <StackPanel Spacing="14">
+          <TextBlock Text="Homebrew / Overdrive" Style="{StaticResource TitleTextBlockStyle}" />
+          <TextBlock Text="Overdrive.exfat é uma imagem exFAT para ShadowMount+ em um PS5 desbloqueado. O KytyPS5-Xbox não pode instalar nem executar essa imagem diretamente." TextWrapping="Wrap" Style="{StaticResource BodyTextBlockStyle}" />
+          <Button x:Name="HomebrewTopicButton" Content="Projetos PS5 homebrew no GitHub" HorizontalAlignment="Stretch" Padding="12" />
+          <Button x:Name="ItchHomebrewButton" Content="Jogos independentes e homebrew no itch.io" HorizontalAlignment="Stretch" Padding="12" />
+          <Button x:Name="ScanExfatButton" Content="Procurar imagens .exfat nas pastas de jogos" HorizontalAlignment="Stretch" Padding="12" />
+          <TextBlock x:Name="ExfatScanStatus" Text="Nenhuma verificação realizada." TextWrapping="Wrap" FontSize="12" />
+          <TextBlock Text="Compatibilidade pendente: leitor EXFAT e runtime PS5 compatível. Detectar um arquivo não significa instalá-lo." TextWrapping="Wrap" Opacity="0.8" FontSize="12" />
+          <Button x:Name="HomebrewCloseButton" Content="Voltar à biblioteca" HorizontalAlignment="Right" />
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+  </Grid>
 
   <!-- A game's options (Menu button, right click), in the system's look: its details, play, cheats, hide. -->
   <Grid x:Name="Options" Visibility="Collapsed">
