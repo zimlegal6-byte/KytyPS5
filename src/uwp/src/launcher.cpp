@@ -647,7 +647,7 @@ xaml::UIElement CreatePage(LauncherActions actions, bool scan, std::optional<siz
 		    scan_folder = [&](const std::filesystem::path& folder, int depth) {
 			    for (const auto& image : ExfatImagesIn(folder)) {
 				    ++found;
-				    report += L"Imagem EXFAT encontrada: " + image.wstring() + L"\\n";
+				    report += L"Imagem EXFAT encontrada: " + image.wstring() + L"\n";
 			    }
 			    if (depth > 0) {
 				    for (const auto& subfolder : Subfolders(folder)) {
