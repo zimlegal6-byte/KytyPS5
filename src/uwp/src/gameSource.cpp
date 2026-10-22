@@ -248,7 +248,61 @@ std::optional<PkgInspection> InspectPkgFile(const std::filesystem::path& path) {
 		}
 		result.structure_valid = valid;
 		result.detail = valid ? L"FIH outer layout and embedded CNT bounds validated; cryptographic signature and payload not validated."
-		                      : L"FIH marker found, but outer layout or embedded CNT bounds are invalid.";
+		                      : L"FIH marker found; wrapper layout did not validate.";
+
+		// Also try the documented standalone PS5 FIH header/table layout (big-endian).
+		// This is read-only structural inspection: it never decrypts or extracts payload data.
+		auto read_be32 = [](const uint8_t* p) -> uint32_t {
+			return (static_cast<uint32_t>(p[0]) << 24) | (static_cast<uint32_t>(p[1]) << 16) |
+			       (static_cast<uint32_t>(p[2]) << 8) | static_cast<uint32_t>(p[3]);
+		};
+		auto read_be64 = [&read_be32](const uint8_t* p) -> uint64_t {
+			return (static_cast<uint64_t>(read_be32(p)) << 32) | read_be32(p + 4);
+		};
+		uint8_t pkg_header[0x1000] {};
+		LARGE_INTEGER start {};
+		DWORD pkg_header_read = 0;
+		if (result.file_size >= sizeof(pkg_header) &&
+		    SetFilePointerEx(file, start, nullptr, FILE_BEGIN) != 0 &&
+		    ReadFile(file, pkg_header, sizeof(pkg_header), &pkg_header_read, nullptr) != 0 &&
+		    pkg_header_read == sizeof(pkg_header)) {
+			const uint64_t count = read_be32(pkg_header + 0x0C);
+			const uint64_t table_offset = read_be32(pkg_header + 0x10);
+			const uint64_t table_size = read_be32(pkg_header + 0x14);
+			const uint64_t body_offset = read_be64(pkg_header + 0x18);
+			const uint64_t body_size = read_be64(pkg_header + 0x20);
+			const bool table_bounds = count > 0 && count <= 100000 &&
+			    table_offset >= sizeof(pkg_header) && table_offset <= result.file_size &&
+			    table_size >= count * 32 && table_size <= result.file_size - table_offset &&
+			    body_offset <= result.file_size && body_size <= result.file_size - body_offset;
+			if (table_bounds) {
+				bool entries_valid = true;
+				uint8_t entry[32] {};
+				for (uint64_t index = 0; index < count && entries_valid; ++index) {
+					LARGE_INTEGER entry_position {};
+					entry_position.QuadPart = static_cast<LONGLONG>(table_offset + index * 32);
+					DWORD entry_read = 0;
+					if (SetFilePointerEx(file, entry_position, nullptr, FILE_BEGIN) == 0 ||
+					    ReadFile(file, entry, sizeof(entry), &entry_read, nullptr) == 0 ||
+					    entry_read != sizeof(entry)) {
+						entries_valid = false;
+						break;
+					}
+					const uint64_t entry_offset = read_be64(entry + 8);
+					const uint64_t entry_size = read_be64(entry + 16);
+					if (entry_offset > result.file_size || entry_size > result.file_size - entry_offset) {
+						entries_valid = false;
+					}
+				}
+				if (entries_valid) {
+					result.structure_valid = true;
+					result.entry_count = static_cast<uint32_t>(count);
+					result.entry_table_offset = table_offset;
+					result.entry_table_size = table_size;
+					result.detail = L"PS5 FIH header and entry table bounds validated; signatures, encryption and payload contents not validated.";
+				}
+			}
+		}
 	} else if (magic[0] == 0x7F && magic[1] == 'P' && magic[2] == 'K' && magic[3] == 'G') {
 		result.kind = PkgHeaderKind::Ps5Pkg;
 		result.detail = L"PKG marker only; internal structure not validated.";
